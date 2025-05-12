@@ -1,15 +1,13 @@
-FROM dockage/alpine:3.18.6
+FROM ruby:3.1-slim
 
 ENV MAILCATCHER_VERSION=0.9.0
 
-RUN apk --no-cache --update add build-base ruby ruby-dev ruby-json ruby-etc sqlite-dev gcompat \
-    && [ "$(uname -m)" != "aarch64" ] || gem install sqlite3 --version="~> 1.3" --no-document --platform ruby \
-    && gem install mailcatcher:${MAILCATCHER_VERSION} --no-document \
-    && apk del --rdepends --purge build-base
+# Install dependencies
+RUN apt-get update && \
+    apt-get install -y build-essential libsqlite3-dev && \
+    gem install mailcatcher -v 0.8.2 && \
+    apt-get clean
 
 EXPOSE 1025 1080
 
-COPY assets/root/ /
-
-ENTRYPOINT ["entrypoint"]
 CMD ["mailcatcher", "-f", "--ip", "0.0.0.0"]
