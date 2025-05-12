@@ -1,0 +1,6 @@
+services:
+  mailcatcher:
+    build: .
+    ports:
+      - "1080:1080" # Web UI
+      - "1025:1025" # SMTP
