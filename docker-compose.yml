@@ -1,7 +1,42 @@
 services:
-  mailcatcher:
-    restart: on-failure
-    image: dockage/mailcatcher:0.9.0
+  nginx-proxy:
+    image: nginxproxy/nginx-proxy:alpine
+    container_name: nginx-proxy
     ports:
-      - "1080:1080"
-      - "1025:1025"
+      - "80:80"
+      - "443:443"
+    volumes:
+      - /etc/nginx/certs
+      - /etc/nginx/vhost.d
+      - /usr/share/nginx/html
+      - /var/run/docker.sock:/tmp/docker.sock:ro
+    networks:
+      - proxy
+
+  acme-companion:
+    image: nginxproxy/acme-companion
+    container_name: acme-companion
+    depends_on:
+      - nginx-proxy
+    environment:
+      - DEFAULT_EMAIL=chaz@blocktickets.xyz
+    volumes_from:
+      - nginx-proxy
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - /etc/acme.sh
+  mailcatcher:
+    image: schickling/mailcatcher
+    container_name: mailcatcher
+    environment:
+      - VIRTUAL_HOST=mailbox.blocktickets.xyz
+      - LETSENCRYPT_HOST=mailbox.blocktickets.xyz
+      - LETSENCRYPT_EMAIL=chaz@blocktickets.xyz
+    expose:
+      - "1080"
+    networks:
+      - proxy
+
+networks:
+  proxy:
+    external: false
