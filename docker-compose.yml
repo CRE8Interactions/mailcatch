@@ -35,6 +35,9 @@ services:
       - VIRTUAL_PORT=1080
     expose:
       - "1080"
+      - "1025"
+    ports:
+      - "1025:1025" # optionally expose externally if needed
     networks:
       - proxy
 
