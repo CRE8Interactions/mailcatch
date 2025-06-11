@@ -32,6 +32,7 @@ services:
       - VIRTUAL_HOST=mailbox.blocktickets.xyz
       - LETSENCRYPT_HOST=mailbox.blocktickets.xyz
       - LETSENCRYPT_EMAIL=chaz@blocktickets.xyz
+      - VIRTUAL_PORT=1080
     expose:
       - "1080"
     networks:
