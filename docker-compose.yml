@@ -1,44 +1,46 @@
 services:
   nginx-proxy:
-    image: nginxproxy/nginx-proxy:alpine
+    image: jwilder/nginx-proxy
     container_name: nginx-proxy
-    restart: unless-stopped
+    restart: always
     ports:
       - "80:80"
       - "443:443"
     volumes:
-      - /etc/nginx/certs
-      - /etc/nginx/vhost.d
-      - /usr/share/nginx/html
       - /var/run/docker.sock:/tmp/docker.sock:ro
+      - ./certs:/etc/nginx/certs:ro
+      - ./vhost.d:/etc/nginx/vhost.d
+      - ./html:/usr/share/nginx/html
     networks:
       - proxy
 
-  acme-companion:
-    image: nginxproxy/acme-companion
-    container_name: acme-companion
-    restart: unless-stopped
+  letsencrypt:
+    image: jrcs/letsencrypt-nginx-proxy-companion
+    container_name: nginx-letsencrypt
+    restart: always
     depends_on:
       - nginx-proxy
     environment:
-      - DEFAULT_EMAIL=chaz@blocktickets.xyz
-    volumes_from:
-      - nginx-proxy
+      - NGINX_PROXY_CONTAINER=nginx-proxy
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
-      - /etc/acme.sh
+      - ./certs:/etc/nginx/certs
+      - ./vhost.d:/etc/nginx/vhost.d
+      - ./html:/usr/share/nginx/html
+    networks:
+      - proxy
   mailcatcher:
     image: schickling/mailcatcher
     container_name: mailcatcher
     environment:
-      - VIRTUAL_HOST=mailbox.blocktickets.xyz
-      - LETSENCRYPT_HOST=mailbox.blocktickets.xyz
-      - LETSENCRYPT_EMAIL=chaz@blocktickets.xyz
-      - VIRTUAL_PORT=1080
+      VIRTUAL_HOST: mailbox.blocktickets.xyz
+      LETSENCRYPT_HOST: mailbox.blocktickets.xyz
+      LETSENCRYPT_EMAIL: chaz@blocktickets.xyz
+      VIRTUAL_PORT: 1080
     expose:
       - "1080"
       - "1025"
-    restart: unless-stopped
+    restart: always
     ports:
       - "1025:1025" # optionally expose externally if needed
     networks:
@@ -46,4 +48,4 @@ services:
 
 networks:
   proxy:
-    external: false
+    external: true
