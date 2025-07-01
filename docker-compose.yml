@@ -1,42 +1,40 @@
 services:
-  # nginx-proxy:
-  #   image: jwilder/nginx-proxy
-  #   container_name: nginx-proxy
-  #   restart: always
-  #   ports:
-  #     - "80:80"
-  #     - "443:443"
-  #   volumes:
-  #     - /var/run/docker.sock:/tmp/docker.sock:ro
-  #     - ./certs:/etc/nginx/certs:ro
-  #     - ./vhost.d:/etc/nginx/vhost.d
-  #     - ./html:/usr/share/nginx/html
-  #   networks:
-  #     - nginx-proxy
+  nginx-proxy:
+    image: nginxproxy/nginx-proxy:alpine
+    container_name: nginx-proxy
+    restart: always
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - /etc/nginx/certs
+      - /etc/nginx/vhost.d
+      - /usr/share/nginx/html
+      - /var/run/docker.sock:/tmp/docker.sock:ro
+    networks:
+      - proxy
 
-  # letsencrypt:
-  #   image: jrcs/letsencrypt-nginx-proxy-companion
-  #   container_name: nginx-letsencrypt
-  #   restart: always
-  #   depends_on:
-  #     - nginx-proxy
-  #   environment:
-  #     - NGINX_PROXY_CONTAINER=nginx-proxy
-  #   volumes:
-  #     - /var/run/docker.sock:/var/run/docker.sock:ro
-  #     - ./certs:/etc/nginx/certs
-  #     - ./vhost.d:/etc/nginx/vhost.d
-  #     - ./html:/usr/share/nginx/html
-  #   networks:
-  #     - nginx-proxy
+  acme-companion:
+    image: nginxproxy/acme-companion
+    container_name: acme-companion
+    restart: always
+    depends_on:
+      - nginx-proxy
+    environment:
+      - DEFAULT_EMAIL=chaz@blocktickets.xyz
+    volumes_from:
+      - nginx-proxy
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - /etc/acme.sh
   mailcatcher:
     image: schickling/mailcatcher
     container_name: mailcatcher
     environment:
-      VIRTUAL_HOST: mailbox.blocktickets.xyz
-      LETSENCRYPT_HOST: mailbox.blocktickets.xyz
-      LETSENCRYPT_EMAIL: chaz@blocktickets.xyz
-      VIRTUAL_PORT: 1080
+      - VIRTUAL_HOST=mailbox.blocktickets.xyz
+      - LETSENCRYPT_HOST=mailbox.blocktickets.xyz
+      - LETSENCRYPT_EMAIL=chaz@blocktickets.xyz
+      - VIRTUAL_PORT=1080
     expose:
       - "1080"
       - "1025"
@@ -44,8 +42,8 @@ services:
     ports:
       - "1025:1025" # optionally expose externally if needed
     networks:
-      - nginx-proxy
+      - proxy
 
 networks:
-  nginx-proxy:
+  proxy:
     external: false
