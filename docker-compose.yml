@@ -22,11 +22,13 @@ services:
       - nginx-proxy
     environment:
       - DEFAULT_EMAIL=chaz@blocktickets.xyz
-    volumes_from:
-      - nginx-proxy
     volumes:
+      - /etc/nginx/certs:/etc/nginx/certs
+      - /etc/nginx/vhost.d:/etc/nginx/vhost.d
+      - /usr/share/nginx/html:/usr/share/nginx/html
       - /var/run/docker.sock:/var/run/docker.sock:ro
-      - /etc/acme.sh
+    networks:
+      - proxy
   mailcatcher:
     image: schickling/mailcatcher
     container_name: mailcatcher
@@ -43,7 +45,16 @@ services:
       - "1025:1025" # optionally expose externally if needed
     networks:
       - proxy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:1080"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    labels:
+      - "com.github.jrcs.letsencrypt_nginx_proxy_companion.nginx_proxy=true"
 
 networks:
   proxy:
+    labels:
+      - "com.github.jrcs.letsencrypt_nginx_proxy_companion.nginx_proxy=true"
     external: false
